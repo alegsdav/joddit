@@ -1,6 +1,5 @@
 import { neon } from '@neondatabase/serverless';
 
-// With the latest driver (0.10.4+), we don't need to manually clean the URL.
 const DATABASE_URL = process.env.EXPO_PUBLIC_DATABASE_URL;
 
 export interface NeonNote {
@@ -16,19 +15,18 @@ export interface NeonNote {
   is_deleted: boolean;
 }
 
-export const db = {
-  async getNotes(userId: string, token?: string) {
-    if (!DATABASE_URL) {
-      console.warn('[Neon DB] DATABASE_URL is not defined.');
-      return [];
-    }
-    
-    try {
-      // Use the token if provided, otherwise standard connection
-      const sql = token 
-        ? neon(DATABASE_URL, { fetchOptions: { headers: { Authorization: `Bearer ${token}` } } })
-        : neon(DATABASE_URL);
+// Simple SQL client without Neon Auth / Authorization headers
+const getSql = () => {
+  if (!DATABASE_URL) {
+    throw new Error('DATABASE_URL is not defined');
+  }
+  return neon(DATABASE_URL);
+};
 
+export const db = {
+  async getNotes(userId: string) {
+    try {
+      const sql = getSql();
       const notes = await sql`
         SELECT * FROM notes 
         WHERE user_id = ${userId} 
@@ -42,19 +40,11 @@ export const db = {
     }
   },
 
-  async saveNote(userId: string, note: any, token?: string) {
-    if (!DATABASE_URL) {
-      console.warn('[Neon DB] DATABASE_URL is not defined in environment variables. Note not saved to remote.');
-      return;
-    }
-
+  async saveNote(userId: string, note: any) {
     try {
+      const sql = getSql();
       console.log(`[Neon DB] Saving note ${note.id} for user ${userId}...`);
       
-      const sql = token 
-        ? neon(DATABASE_URL, { fetchOptions: { headers: { Authorization: `Bearer ${token}` } } })
-        : neon(DATABASE_URL);
-
       // Upsert note
       await sql`
         INSERT INTO notes (
@@ -65,7 +55,7 @@ export const db = {
           ${userId}, 
           ${note.title}, 
           ${note.content}, 
-          ${note.segments}, 
+          ${JSON.stringify(note.segments)}, 
           ${note.createdAt}, 
           ${note.updatedAt}, 
           ${note.isPinned}, 
@@ -87,13 +77,9 @@ export const db = {
     }
   },
 
-  async deleteNote(userId: string, noteId: string, token?: string) {
-    if (!DATABASE_URL) return;
+  async deleteNote(userId: string, noteId: string) {
     try {
-      const sql = token 
-        ? neon(DATABASE_URL, { fetchOptions: { headers: { Authorization: `Bearer ${token}` } } })
-        : neon(DATABASE_URL);
-
+      const sql = getSql();
       await sql`
         UPDATE notes 
         SET is_deleted = true 

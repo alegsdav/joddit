@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 
 interface OnboardingProps {
@@ -7,6 +7,52 @@ interface OnboardingProps {
 }
 
 export default function Onboarding({ onComplete, onLogin }: OnboardingProps) {
+  const titleOpacity = useRef(new Animated.Value(0)).current;
+  const subtitleOpacity = useRef(new Animated.Value(0)).current;
+  const buttonsOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Orb animation values (starting off-screen)
+  const orb1X = useRef(new Animated.Value(-300)).current;
+  const orb2X = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    // Sequence the animations with slight overlaps/staggering
+    Animated.stagger(300, [
+      // Step 1: Title fades in AND orbs bounce in
+      Animated.parallel([
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.spring(orb1X, {
+          toValue: 0,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(orb2X, {
+          toValue: 0,
+          friction: 6,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Step 2: Subtitle fades in
+      Animated.timing(subtitleOpacity, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      // Step 3: Buttons fade in
+      Animated.timing(buttonsOpacity, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const handleContinue = () => {
     onComplete();
   };
@@ -14,26 +60,22 @@ export default function Onboarding({ onComplete, onLogin }: OnboardingProps) {
   return (
     <View style={styles.container}>
       <View style={styles.orbContainer}>
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
+        <Animated.View style={[styles.orb, styles.orb1, { transform: [{ translateX: orb1X }] }]} />
+        <Animated.View style={[styles.orb, styles.orb2, { transform: [{ translateX: orb2X }] }]} />
       </View>
 
       <View style={styles.spacer} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>Joddit</Text>
-        <Text style={styles.subtitle}>Capture your ideas as they happen.</Text>
+        <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
+          Joddit
+        </Animated.Text>
+        <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity }]}>
+          Capture your ideas as they happen.
+        </Animated.Text>
       </View>
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={styles.primaryButton}
-          onPress={handleContinue}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.primaryButtonText}>Continue</Text>
-        </TouchableOpacity>
-        
+      <Animated.View style={[styles.buttonContainer, { opacity: buttonsOpacity }]}>
         <TouchableOpacity 
           style={styles.secondaryButton}
           onPress={onLogin}
@@ -41,7 +83,15 @@ export default function Onboarding({ onComplete, onLogin }: OnboardingProps) {
         >
           <Text style={styles.secondaryButtonText}>Log In</Text>
         </TouchableOpacity>
-      </View>
+
+        <TouchableOpacity 
+          style={styles.primaryButton}
+          onPress={handleContinue}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.primaryButtonText}>Continue</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -49,7 +99,7 @@ export default function Onboarding({ onComplete, onLogin }: OnboardingProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F3',
+    backgroundColor: '#E7e5db', // Cream background
     padding: 32,
     justifyContent: 'space-between',
   },
@@ -62,66 +112,72 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   orb1: {
-    width: 256,
-    height: 256,
-    backgroundColor: 'rgba(251, 146, 60, 0.4)',
-    top: 80,
+    width: 280,
+    height: 280,
+    backgroundColor: '#DAD8CC', // 100% opacity
+    top: '15%',
     left: -40,
   },
   orb2: {
-    width: 320,
-    height: 320,
-    backgroundColor: 'rgba(191, 219, 254, 0.5)',
+    width: 450,
+    height: 450,
+    backgroundColor: 'rgba(192, 184, 170, 0.5)', // #C0B8AA at 50% opacity
     bottom: 160,
-    right: -80,
+    right: -130,
   },
   spacer: {
     flex: 1,
   },
   content: {
-    marginBottom: 80,
+    marginBottom: 40,
     zIndex: 10,
   },
   title: {
-    fontSize: 60,
-    fontWeight: 'bold',
+    fontSize: 80,
+    fontWeight: '900',
     color: '#000',
-    letterSpacing: -2,
+    letterSpacing: 0,
+    fontFamily: 'Jersey10',
   },
   subtitle: {
     fontSize: 20,
-    color: 'rgba(0, 0, 0, 0.6)',
-    fontWeight: '300',
-    maxWidth: 280,
-    marginTop: 16,
+    color: 'rgba(0, 0, 0, 0.7)',
+    fontWeight: '400',
+    maxWidth: 400,
+    marginTop: 0,
   },
   buttonContainer: {
-    gap: 16,
-    marginBottom: 48,
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 40,
     zIndex: 10,
   },
   primaryButton: {
+    flex: 1,
     backgroundColor: '#000',
-    paddingVertical: 20,
-    borderRadius: 24,
+    paddingVertical: 24,
+    borderRadius: 40,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryButtonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   secondaryButton: {
+    flex: 1,
     backgroundColor: '#fff',
-    paddingVertical: 20,
-    borderRadius: 24,
+    paddingVertical: 24,
+    borderRadius: 40,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
+    borderColor: '#1a1a1a80',
   },
   secondaryButtonText: {
     color: '#000',
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

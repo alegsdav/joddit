@@ -1,6 +1,10 @@
 import * as FileSystem from 'expo-file-system';
 
-const DEEPGRAM_API_KEY = '856104567208f590a735f732d536bd986f802929';
+const DEEPGRAM_API_KEY = process.env.EXPO_PUBLIC_DEEPGRAM_API_KEY;
+
+if (!DEEPGRAM_API_KEY) {
+  console.warn('[Deepgram] API key is not defined in environment variables.');
+}
 
 interface TranscriptionSegment {
   speakerId: string;
@@ -17,13 +21,13 @@ export async function transcribeAudio(audioUri: string): Promise<{
       throw new Error('Deepgram API key not configured');
     }
 
-    // Read the audio file
-    const audioInfo = await FileSystem.getInfoAsync(audioUri);
-    if (!audioInfo.exists) {
-      throw new Error('Audio file not found');
-    }
-
+    // In Expo 54, getInfoAsync is deprecated/removed.
+    // We can just rely on fetch(audioUri) to fail if the file doesn't exist,
+    // or use a more compatible check if needed.
+    
     // Upload to Deepgram using fetch API
+    const audioBlob = await fetch(audioUri).then(r => r.blob());
+    
     const response = await fetch(
       'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true&punctuate=true&utterances=true',
       {
@@ -32,7 +36,7 @@ export async function transcribeAudio(audioUri: string): Promise<{
           'Authorization': `Token ${DEEPGRAM_API_KEY}`,
           'Content-Type': 'audio/wav',
         },
-        body: await fetch(audioUri).then(r => r.blob()),
+        body: audioBlob,
       }
     );
 

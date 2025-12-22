@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
 import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-expo';
+import { useFonts, Jersey10_400Regular } from '@expo-google-fonts/jersey-10';
 import { tokenCache } from './lib/clerk';
 import { useNotes, storage } from './lib/storage';
 import { Note, AppView } from './types';
@@ -12,6 +13,8 @@ import Recording from './screens/Recording';
 import Auth from './screens/Auth';
 import Profile from './screens/Profile';
 import OnboardingName from './screens/OnboardingName';
+
+
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
 
@@ -43,7 +46,7 @@ const INITIAL_NOTES: Note[] = [
 ];
 
 function MainApp() {
-  const { isSignedIn, isLoaded: isAuthLoaded, getToken } = useAuth();
+  const { isSignedIn, isLoaded: isAuthLoaded } = useAuth();
   const { user, isLoaded: isUserLoaded } = useUser();
   const notes = useNotes(user?.id) || [];
   const [view, setView] = useState<AppView>('onboarding');
@@ -64,13 +67,9 @@ function MainApp() {
 
   useEffect(() => {
     const init = async () => {
-      let token;
-      if (user?.id) {
-        token = await getToken();
-      }
-      const currentNotes = await storage.getNotes(user?.id, token || undefined);
+      const currentNotes = await storage.getNotes(user?.id);
       if (currentNotes.length === 0) {
-        await storage.bulkSaveNotes(INITIAL_NOTES, user?.id, token || undefined);
+        await storage.bulkSaveNotes(INITIAL_NOTES, user?.id);
       }
     };
     init();
@@ -84,19 +83,11 @@ function MainApp() {
   }, [isSignedIn, view]);
 
   const handleUpdateNote = async (note: Note) => {
-    let token;
-    if (user?.id) {
-      token = await getToken();
-    }
-    await storage.saveNote(note, user?.id, token || undefined);
+    await storage.saveNote(note, user?.id);
   };
 
   const handleDeleteNote = async (id: string) => {
-    let token;
-    if (user?.id) {
-      token = await getToken();
-    }
-    await storage.deleteNote(id, user?.id, token || undefined);
+    await storage.deleteNote(id, user?.id);
     setSelectedNote(null);
   };
 
@@ -114,11 +105,7 @@ function MainApp() {
       isDeleted: false
     };
     
-    let token;
-    if (user?.id) {
-      token = await getToken();
-    }
-    await storage.saveNote(newNote, user?.id, token || undefined);
+    await storage.saveNote(newNote, user?.id);
     setSelectedNote(newNote);
     setView('editor');
   };
@@ -127,7 +114,7 @@ function MainApp() {
     <View style={styles.container}>
       {view === 'onboarding' && (
         <Onboarding 
-          onComplete={() => setView(isSignedIn ? 'home' : 'auth')}
+          onComplete={() => setView('home')}
           onLogin={() => setView('auth')}
         />
       )}
@@ -188,6 +175,14 @@ function MainApp() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'Jersey10': Jersey10_400Regular,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
       <MainApp />
@@ -198,6 +193,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F3',
+    backgroundColor: '#E7e5db', // Match onboarding background
   },
 });
