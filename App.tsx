@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-expo';
 import { tokenCache } from './lib/clerk';
 import { useNotes, storage } from './lib/storage';
 import { Note, AppView } from './types';
@@ -10,6 +10,8 @@ import Home from './screens/Home';
 import Editor from './screens/Editor';
 import Recording from './screens/Recording';
 import Auth from './screens/Auth';
+import Profile from './screens/Profile';
+import OnboardingName from './screens/OnboardingName';
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
 
@@ -41,27 +43,60 @@ const INITIAL_NOTES: Note[] = [
 ];
 
 function MainApp() {
-  const { isSignedIn } = useAuth();
-  const notes = useNotes() || [];
+  const { isSignedIn, isLoaded: isAuthLoaded, getToken } = useAuth();
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const notes = useNotes(user?.id) || [];
   const [view, setView] = useState<AppView>('onboarding');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   useEffect(() => {
+    if (!isAuthLoaded || !isUserLoaded) return;
+
+    // Logic to determine initial view
+    if (isSignedIn) {
+      if (!user?.firstName) {
+        setView('onboarding_name');
+      } else if (view === 'onboarding' || view === 'auth') {
+        setView('home');
+      }
+    }
+  }, [isSignedIn, isAuthLoaded, isUserLoaded, user?.firstName]);
+
+  useEffect(() => {
     const init = async () => {
-      const currentNotes = await storage.getNotes();
+      let token;
+      if (user?.id) {
+        token = await getToken();
+      }
+      const currentNotes = await storage.getNotes(user?.id, token || undefined);
       if (currentNotes.length === 0) {
-        await storage.bulkSaveNotes(INITIAL_NOTES);
+        await storage.bulkSaveNotes(INITIAL_NOTES, user?.id, token || undefined);
       }
     };
     init();
-  }, []);
+  }, [user?.id]);
+
+  // Update view when sign-in status changes
+  useEffect(() => {
+    if (isSignedIn && view === 'auth') {
+      setView('home');
+    }
+  }, [isSignedIn, view]);
 
   const handleUpdateNote = async (note: Note) => {
-    await storage.saveNote(note);
+    let token;
+    if (user?.id) {
+      token = await getToken();
+    }
+    await storage.saveNote(note, user?.id, token || undefined);
   };
 
   const handleDeleteNote = async (id: string) => {
-    await storage.deleteNote(id);
+    let token;
+    if (user?.id) {
+      token = await getToken();
+    }
+    await storage.deleteNote(id, user?.id, token || undefined);
     setSelectedNote(null);
   };
 
@@ -78,7 +113,12 @@ function MainApp() {
       isSynced: false,
       isDeleted: false
     };
-    await storage.saveNote(newNote);
+    
+    let token;
+    if (user?.id) {
+      token = await getToken();
+    }
+    await storage.saveNote(newNote, user?.id, token || undefined);
     setSelectedNote(newNote);
     setView('editor');
   };
@@ -87,20 +127,35 @@ function MainApp() {
     <View style={styles.container}>
       {view === 'onboarding' && (
         <Onboarding 
-          onComplete={() => setView('home')}
+          onComplete={() => setView(isSignedIn ? 'home' : 'auth')}
           onLogin={() => setView('auth')}
+        />
+      )}
+
+      {view === 'onboarding_name' && (
+        <OnboardingName 
+          onComplete={() => setView('home')}
         />
       )}
       
       {view === 'home' && (
         <Home
           notes={notes}
+          userName={user?.firstName || 'Guest'}
           onStartRecording={() => setView('recording')}
           onSelectNote={(note) => {
             setSelectedNote(note);
             setView('editor');
           }}
           onUpdateNote={handleUpdateNote}
+          onOpenProfile={() => setView('profile')}
+        />
+      )}
+
+      {view === 'profile' && (
+        <Profile 
+          onBack={() => setView('home')}
+          onLogin={() => setView('auth')}
         />
       )}
 
@@ -144,24 +199,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F3',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 20,
-    color: '#666',
-    marginBottom: 32,
-  },
-  info: {
-    fontSize: 16,
-    color: '#333',
-    marginVertical: 4,
   },
 });

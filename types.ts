@@ -1,5 +1,5 @@
 
-export type AppView = 'onboarding' | 'home' | 'recording' | 'editor' | 'settings' | 'auth';
+export type AppView = 'onboarding' | 'onboarding_name' | 'home' | 'recording' | 'editor' | 'settings' | 'auth' | 'profile';
 
 export interface Speaker {
   id: string;

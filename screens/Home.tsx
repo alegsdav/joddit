@@ -4,12 +4,14 @@ import { Note } from '../types';
 
 interface HomeProps {
   notes: Note[];
+  userName?: string;
   onStartRecording: () => void;
   onSelectNote: (note: Note) => void;
   onUpdateNote: (note: Note) => void;
+  onOpenProfile: () => void;
 }
 
-export default function Home({ notes, onStartRecording, onSelectNote, onUpdateNote }: HomeProps) {
+export default function Home({ notes, userName = 'Guest', onStartRecording, onSelectNote, onUpdateNote, onOpenProfile }: HomeProps) {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -42,10 +44,10 @@ export default function Home({ notes, onStartRecording, onSelectNote, onUpdateNo
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <View style={styles.userBadge}>
+          <TouchableOpacity style={styles.userBadge} onPress={onOpenProfile}>
             <View style={styles.avatar} />
-            <Text style={styles.userName}>Hi, Guest</Text>
-          </View>
+            <Text style={styles.userName}>Hi, {userName}</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.menuButton}>
             <Text style={styles.menuIcon}>⋯</Text>
           </TouchableOpacity>
@@ -147,6 +149,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 120,
+    width: '100%',
   },
   header: {
     flexDirection: 'row',

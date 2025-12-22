@@ -35,10 +35,17 @@ export default function Auth({ onBack }: AuthProps) {
 
       if (result.status === 'complete') {
         await setActiveSignIn({ session: result.createdSessionId });
-        onBack();
+        // No need to call onBack() here, App.tsx will detect isSignedIn and redirect
       }
     } catch (err: any) {
-      Alert.alert('Error', err.errors?.[0]?.message || 'Failed to sign in');
+      const errorMessage = err.errors?.[0]?.message || 'Failed to sign in';
+      if (errorMessage.toLowerCase().includes('session already exists') || err.status === 403) {
+        // If session exists, we should be good to go back
+        console.log('Session already exists, navigating back');
+        onBack();
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -74,7 +81,7 @@ export default function Auth({ onBack }: AuthProps) {
 
       if (result.status === 'complete') {
         await setActiveSignUp({ session: result.createdSessionId });
-        onBack();
+        // App.tsx handles the redirect
       }
     } catch (err: any) {
       Alert.alert('Error', err.errors?.[0]?.message || 'Invalid verification code');
