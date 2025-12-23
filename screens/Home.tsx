@@ -527,9 +527,10 @@ const styles = StyleSheet.create({
 
   // Note Cards
   noteCard: {
-    padding: 16,
+    padding: 12,
+    paddingHorizontal: 24,
     borderRadius: 10,
-    marginBottom: 12,
+    marginBottom: 7,
     position: 'relative',
   },
   pinnedCard: {
@@ -552,40 +553,41 @@ const styles = StyleSheet.create({
     paddingRight: 30,
   },
   pinIconContainer: {
-    marginRight: 6,
+    marginRight: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   noteTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#000',
+    color: 'rgba(75,41,17,0.9)',
     flex: 1,
   },
   noteTitlePinned: {
-    color: '#fff',
+    color: '#f7f5ed',
   },
   noteMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     gap: 8,
   },
   noteDate: {
-    fontSize: 13,
-    color: 'rgba(0,0,0,0.5)',
-    fontWeight: '500',
+    fontSize: 14,
+    color: 'rgba(82,55,37,0.79)',
+    fontWeight: '600',
   },
   noteDatePinned: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#B4B2A8',
   },
   notePreview: {
-    fontSize: 13,
-    color: 'rgba(0,0,0,0.5)',
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(82,55,37,0.79)',
     flex: 1,
   },
   notePreviewPinned: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#B4B2A8',
   },
   noteCategoryRow: {
     flexDirection: 'row',
@@ -597,12 +599,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noteCategory: {
-    fontSize: 12,
-    color: 'rgba(0,0,0,0.5)',
-    fontWeight: '500',
+    fontSize: 14,
+    color: 'rgba(82,55,37,0.79)',
+    fontWeight: '600',
   },
   noteCategoryPinned: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#B4B2A8',
   },
 
   // Speaker Badge
